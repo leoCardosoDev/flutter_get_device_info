@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:device_info/device_info.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(MyApp());
@@ -24,7 +27,30 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+  static Future<List<String>> getDeviceDetails() async {
+    String deviceName;
+    String deviceVersion;
+    String identifier;
+    final DeviceInfoPlugin deviceInfoPlugin = new DeviceInfoPlugin();
+    try {
+      if (Platform.isAndroid) {
+        var build = await deviceInfoPlugin.androidInfo;
+        deviceName = build.model;
+        deviceVersion = build.version.toString();
+        identifier = build.androidId; //UUID for Android
+      } else if (Platform.isIOS) {
+        var data = await deviceInfoPlugin.iosInfo;
+        deviceName = data.name;
+        deviceVersion = data.systemVersion;
+        identifier = data.identifierForVendor; //UUID for iOS
+      }
+    } on PlatformException {
+      print('Failed to get platform version');
+    }
+    //if (!mounted) return;
+    return [deviceName, deviceVersion, identifier];
+  }
+
   List<Widget> textWidgets = [];
   @override
   Widget build(BuildContext context) {
@@ -40,31 +66,12 @@ class _MyHomePageState extends State<MyHomePage> {
               'Informações do dispositivo:',
               style: TextStyle(fontSize: 20),
             ),
-            ...textWidgets,
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          AndroidDeviceInfo androidInfo = await deviceInfoPlugin.androidInfo;
-          setState(() {
-            textWidgets.add(Text('androidId: ${androidInfo.androidId}'));
-            textWidgets.add(Text('board: ${androidInfo.board}'));
-            textWidgets.add(Text('bootloader: ${androidInfo.bootloader}'));
-            textWidgets.add(Text('brand: ${androidInfo.brand}'));
-            textWidgets.add(Text('device: ${androidInfo.device}'));
-            textWidgets.add(Text('display: ${androidInfo.display}'));
-            textWidgets.add(Text('fingerprint: ${androidInfo.fingerprint}'));
-            textWidgets.add(Text('hardware: ${androidInfo.hardware}'));
-            textWidgets.add(Text('hashCode: ${androidInfo.hashCode}'));
-            textWidgets.add(Text('host: ${androidInfo.host}'));
-            textWidgets.add(Text('id: ${androidInfo.id}'));
-            textWidgets
-                .add(Text('isPhysicalDevice: ${androidInfo.isPhysicalDevice}'));
-            textWidgets.add(Text('manufacturer: ${androidInfo.manufacturer}'));
-            textWidgets.add(Text('model: ${androidInfo.model}'));
-            textWidgets.add(Text('product: ${androidInfo.product}'));
-          });
+        onPressed: () {
+          print(getDeviceDetails());
         },
         tooltip: 'Increment',
         child: Icon(Icons.refresh),
