@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:device_info/device_info.dart';
-import 'package:flutter/services.dart';
+import 'package:get_device_info/get_load_device_info.dart';
 
 void main() {
   runApp(MyApp());
@@ -27,31 +24,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static Future<List<String>> getDeviceDetails() async {
-    String deviceName;
-    String deviceVersion;
-    String identifier;
-    final DeviceInfoPlugin deviceInfoPlugin = new DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
-        var build = await deviceInfoPlugin.androidInfo;
-        deviceName = build.model;
-        deviceVersion = build.version.toString();
-        identifier = build.androidId; //UUID for Android
-      } else if (Platform.isIOS) {
-        var data = await deviceInfoPlugin.iosInfo;
-        deviceName = data.name;
-        deviceVersion = data.systemVersion;
-        identifier = data.identifierForVendor; //UUID for iOS
-      }
-    } on PlatformException {
-      print('Failed to get platform version');
-    }
-    //if (!mounted) return;
-    return [deviceName, deviceVersion, identifier];
-  }
-
-  List<Widget> textWidgets = [];
+  GetDeviceInfo _getDeviceInfo = GetDeviceInfo();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,15 +39,29 @@ class _MyHomePageState extends State<MyHomePage> {
               'Informações do dispositivo:',
               style: TextStyle(fontSize: 20),
             ),
+            FutureBuilder(
+              future: _getDeviceInfo.getLocalDeviceDetails(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error'),
+                  );
+                } else {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ID: ${snapshot.data[0]}'),
+                      Text('Marca: ${snapshot.data[1]}'),
+                      Text('Modelo: ${snapshot.data[2]}'),
+                    ],
+                  );
+                }
+              },
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          print(getDeviceDetails());
-        },
-        tooltip: 'Increment',
-        child: Icon(Icons.refresh),
       ),
     );
   }
